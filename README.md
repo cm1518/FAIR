@@ -1,2 +1,2 @@
 # FAIR
-Matlab code for"Functional Approximation of Impulse Responses" with Regis Barnichon, Journal of Monetary Economics, forthcoming
+Matlab code for "Functional Approximation of Impulse Responses" with Regis Barnichon, Journal of Monetary Economics, forthcoming
