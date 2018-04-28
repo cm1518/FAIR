@@ -1,0 +1,122 @@
+%creates cell with objects needed for estimation
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%General Setup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%number of draws after burn-in 
+setup.number_of_draws=3000;%500000
+%length of burn in (cafter calibrating scaling factor for the case of
+%standard RW proposal)
+%setup.burn_in=1000;%10000
+%number of draws for choosing the scaling matrix in case of standard RW
+%proposal
+setup.scaling_draws=2000;%10000
+%scaling is recomputed after check_scaling draws
+setup.check_scaling=100;%200
+%initial scaling for standard RW proposal
+setup.initial_scaling=[1 200 2 20 20]'; 
+%proposal=1 ->standard RW
+%proposal=2 ->adaptive RW
+setup.proposal=1;
+%log likelihood computation
+%likelihood=1 -> SS KF
+%likelihood=2 ->  KF
+%likelihood=3 -> user-supplied logL
+setup.likelihood=3;
+%name of function that evaluates log prior
+setup.prior_function='prior'; %right now prior function has to be called prior.m!
+%initial value for the state and covariance of the state
+setup.skip_opt=0; %skip optimization and go directly to MCMC
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PART edited BY RB:
+
+% BASIC SETUP FOR DATA INPUT
+setup.lags=20; %lag length of IRF
+setup.size_obs=2; %number of observables
+setup.freq=1;% frequency of data: 1 for monthly, 2 for quarterly
+setup.shocks=0; %0-> initial shocks are zero, 1-> initial shocks from VAR (reduces sample size)
+setup.polynomials=0; %degree of polynomial detrending
+
+
+setup.symmetry=1000; %making sure non of the options are turned on
+setup.VARsym_order=6; %order of symmetric VAR used for starting values
+%that's the number of lags in the sym VAR (RB)
+
+%data file
+
+run ([fileroot,'/Asymmetric_irf_code/Data/detrending']);
+run ([fileroot,'/Asymmetric_irf_code/Data/symVAR_estimation']);
+save (([fileroot,'/Asymmetric_irf_code/Data/VAR',num2str(setup.size_obs),'.mat']), 'A', 'sigma','errors')
+
+setup.data=[fileroot,'/Asymmetric_irf_code/Data/data_file',num2str(setup.size_obs),'.mat'];
+%setup.data=[fileroot,'data.mat'];
+
+
+%setting up initial shocks - either form VAR or set to zero
+if setup.shocks==0
+  setup.initial_eps=zeros(setup.size_obs,setup.lags); %intial shocks set to 0 
+  setup.sample_size=length(data);
+else
+    setup.initial_eps=errors(:,1:setup.lags);
+    setup.sample_size=length(data)-setup.VARsym_order-setup.lags;
+end
+
+
+
+%display every disp iter draw
+setup.disp_iter=1000;
+% keep every keep_draw th draw
+setup.keep_draw=20;
+
+
+
+%initial parameter value for optimization
+
+load (([fileroot,'/Asymmetric_irf_code/Data/VAR',num2str(setup.size_obs),'.mat']))
+
+setup.VARsymA=A; % A matrix for option 3 above
+setup.VARsymcov=sigma; %covariance matrix of residuals from estimated VAR (for option 3 above)
+setup.VARsymchol=chol(sigma,'lower'); 
+
+
+
+
+%setting up restrictions (which shock's resposnes are restricted to be symmetric> Here only the responses to shock 2 are asymmetric) 
+setup.index_restricted=1;
+setup.index_unrestricted=2;
+
+
+%parameter restrictions
+%logit - parameter has to be beteen 0 and 1
+%log - parameter has to be non-negative
+%logit_general - upper and lower bounds are set by hand
+
+setup.length_logit_general=0;
+setup.index_logit_general=[];
+ setup.logit_general_lb=[]';
+setup.logit_general_ub=[]';
+
+%for this code set log indices by hand
+setup.length_log=6;
+setup.index_log=[3 4 5 10 11 12];
+
+setup.length_logit=0;
+setup.index_logit=[];
+
+
+
+%should additional matrices be stored
+setup.add_matrices=1;
+%dimension of those variables
+setup.dim_add_matrices=[setup.size_obs setup.sample_size+setup.lags];
+setup.number_blocks=5;
+setup.index_block{1}=[1:2]';
+setup.index_block{2}=[3 10]';
+setup.index_block{3}=[4:5 11:12]';
+setup.index_block{4}=[6:7 13:14]';
+setup.index_block{5}=[8:9 15:16]';
+%number of gaussians per IRF (same order as observables)
+setup.num_gaussian=[1 1]';
+

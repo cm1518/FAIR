@@ -1,0 +1,225 @@
+%2multibyte Version: 5.50.0.2960 CodePage: 65001
+%\newtheorem{theorem}{Theorem}
+%\newtheorem{axiom}[theorem]{Axiom}
+%\newtheorem{conjecture}[theorem]{Conjecture}
+%\newtheorem{definition}[theorem]{Definition}
+%\newtheorem{example}[theorem]{Example}
+%\newtheorem{exercise}[theorem]{Exercise}
+%\newtheorem{proposition}[theorem]{Proposition}
+%\newtheorem{remark}[theorem]{Remark}
+%\usepackage{acronym}
+
+
+\documentclass[a4paper,12pt]{article}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{amsmath,bm}
+%\usepackage[doublespacing]{setspace}
+\usepackage{epstopdf}
+\usepackage{tikz}
+\usepackage{harvard}
+
+\setcounter{MaxMatrixCols}{10}
+
+
+\setlength{\textwidth}{6.2in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+\begin{document}
+
+
+\title{\large{ Readme file for FAIR code\footnote{For any question, email us at regis.barnichon@sf.frb.org or christian.matthes@rich.frb.org.}}}
+\author{\normalsize{Regis Barnichon} \and \normalsize{Christian Matthes} }
+\date{\footnotesize \today}
+
+	\maketitle
+	
+The code in this folder estimates a FAIR model (using a multiple block Metropolis-Hastings algorithm) that allows for a different response depending on whether an estimated structural shock is positive or negative.\footnote{In earlier versions of the paper, the methodology was referred to as GMA.} The mapping from reduced form one-step forecast errors to structural shocks (i.e., the identification of structural shocks) can be imposed in a flexible way through sign restrictions and/or prior restrictions. This approach to identification is general (see Baumeister and Hamilton, 2016) and (with degenerate priors on some coefficients) nests as a special case point identification schemes such as a recursive ordering of the contemporaneous impact matrix. \\
+
+In order to help users apply the FAIR methodology to their own problems, we provide two examples of FAIR estimation:
+\begin{enumerate}
+\item a trivariate model with actual data as used in the paper ``Functional Approximations of Impulse Responses (FAIR): Insights into the Effects of Monetary Policy''. A researcher interested in estimating the presence of asymmetric effects of shocks in a tri-variate model can directly use this code by simply substituting our dataset with his/hers.
+
+This example estimates a model that allows for asymmetry in the effects of monetary shocks, as in Barnichon and Matthes (2017). Identification is through a recursive ordering: we impose a tight prior centered at zero for the upper diagonal elements of the contemporaneous impulse response matrix $\Psi_0$. Identification through sign-restrictions (e.g., as in Barnichon and Matthes, 2017) or priors on the shape of the impulse response is straightforward to implement by changing only the few lines of codes commanding priors and parameter restrictions in Principal.m. The code includes an example of sign restrictions that is commented (see Barnichon and Matthes, 2017 for a discussion of identifying restrictions possible with FAIR models). 
+
+\item a bivariate model with simulated data  
+
+This second example provides a simple Monte Carlo example where the data are generated from a bivariate moving-average model parametrized with one Gaussian basis function (a FAIR(1)). More complicated (and more realistic) models can be built. The model allows for an asymmetric impulse response to the second structural shock, and for identification, we use a degenerate prior (as opposed to just tight as in the first example) centered at zero for the upper diagonal elements of the impulse response matrix $\Psi_0$.
+
+\end{enumerate}
+
+
+For both examples, the code allows for asymmetry in \emph{one} shock of interest. The moving-average coefficient for the other shocks (which have symmetric effects) are also estimated using FAIR, but without allowing for asymmetry. Both examples use a parametrization with one Gaussian basis function. The provided code can handle up to three Gaussian basis function per impulse response.
+
+\section{List of most important files and folders}
+\begin{enumerate}
+  \item Principal.m - the main file to estimate an asymmetric trivariate model. The dataset (stored in /data) is called data\_file3.mat
+	\item Main\_MC.m - the main file for the bivariate model with simulated data. The code sets the DGP, simulates the data, and runs the estimation by calling Principal\_MC.m (the simulated dataset is stored in  /data under data\_file2.mat)
+	
+	\item folders
+	\begin{itemize}
+		\item /data - contains the dataset
+		\item /lib - contains the subfunctions called by Principal.m or Main\_MC.m
+		\item /results - contains the estimation results (the draws from the MCMC algorithm)
+	\end{itemize}
+	
+
+  \item setup\_NL.m - initializes most of the setup structure that is used for estimation. The setup structure contains all the options used for the estimation (such as which shock can have symmetric effects, how many Gaussian basis functions per impulse response, etc) except parameter restrictions (e.g., sign) and priors (which are both set in Principal.m). The setup file used for the trivariate example is setup\_NL.m and the one for the bivariate example is setup\_NL\_MC.m. The code allows for the joint estimation of a polynomial time trend. The degree of that polynomial can be set via setup.polynomials (see setup\_NL\_bivariate.m). 
+	
+  \item plots\_irfs.m - plots the estimated Impulse Responses (IRs) along with the IRs from the corresponding VAR
+
+  \item VAR\_resp\_match\_NL.m - finds the initial guess for the maximization routine by calculating the FAIR model parameters that best fit the VAR-based IR functions. At the end, it plots the VAR-based IR along with the FAIR fitted values, so that the user can visually inspect whether the initial guess is reasonable. It also plots the Gaussian basis functions for each IR (this is useful when more than one Gaussian basis function is used). Note: when imposing restrictions on the parameters, the initial guess should be consistent with these restrictions. This can be imposed in VAR\_resp\_match\_NL.m by using fmincon instead of fminsearch (see lines 33-38 for an example).
+	
+\end{enumerate}
+
+\subsection{Other files that are important if you want to modify the code}
+\begin{enumerate}
+\item likelihood.m - computes the likelihood
+\item params\_mod.m - maps the parameter vector into the matrices used to compute the MA coefficients
+\item unwrap\_NL\_lagged2.m - computes the MA coefficients
+\item sampling\_MH.m - main file that returns the draws from the MCMC algorithm. The corresponding file for the Monte Carlo example is sampling\_MH\_MC.m. The only difference with sampling\_MH.m is that sampling\_MH\_MC.m takes into account that the intercepts and the above diagonal element in the matrix mapping from one-step forecast error to structural shocks are set to zero via a degenerate prior.
+\end{enumerate}
+
+
+\section{Priors and parameter restrictions} 
+Priors are set in the Principal file. Except for the identifying restrictions, the prior are loosely centered at the values implied by the impulse responses from a VAR estimated on the same sample via OLS. Note that the prior thus favors symmetry. The code can use either Gaussian or Gamma distributions for the priors. 
+
+Parameters can be restricted in the Principal file - the MH acceptance probabilities are then adjusted to take into account that the proposal is now a random walk on a transformed parameter space. 
+
+Sign restrictions on the impulse responses can be enforced via a combination of priors and parameter restrictions. 
+
+In the setup file, the diagonal elements of $\Psi_0$ have to be restricted to be positive. These restrictions can be though of as further truncating the chosen prior distribution. 
+
+For the Monte Carlo example, the MC code will give a warning that the covariance matrix of the proposal for block one can not be computed (the acceptance probability in that block will also remain 0 throughout the estimation). This is by construction - the first block are the parameters that are set to zero via a very tight prior.
+
+\section{Some practical comments on the Initial Guess}
+
+To prevent the algorithm from starting in regions of the parameter space with very large (absolute) values of $b$ or $c$, it often helps to put a lower bound on $b$ (such as $b>\underline{b}$) during the initial guess phase (see lines 33-38 of VAR\_resp\_match\_NL.m for an example). Otherwise, starting from a very negative value for $b$, the algorithm may not explore efficiently the parameter space of $b$. (for instance, this can happen in FAIR(1) with a monotonically decreasing IR, where VAR\_resp\_match\_NL.m can choose a very negative $b<0$ along with a very large value of $c$ for a marginal improvement in the fit of the  FAIR-based IR to the VAR-based IR). 
+
+Also, in the case of FAIR with more than one Gaussian basis functions, it helps to start with well-conditioned Gaussian basis functions. Relatedly, with more than one Gaussian basis function, it can help to impose a lower-bound on $c$ (which corresponds to the width of the basis function, and thus can be interpreted as the bandwidth) in order to prevent VAR\_resp\_match\_NL.m from overfitting some noise in the VAR-based IR. 
+
+
+\section{Order of Parameters in Parameter Vector}
+
+We now describe the ordering of the parameter vector. The parameters of the Gaussian basis functions $a$, $b$ and $c$ of each Gaussian basis function G correspond to \[
+G=ae^{-\frac{(k-b)^{2}}{c}}
+\]%
+
+Note that $c$ is not squared (unlike in the text of our FAIR papers), so that in order to interpret $c$ as the width of the Gaussian (i.e., as the ``bandwidth'' of the basis function), one first need to take its square root.
+
+\begin{enumerate}
+  \item intercepts
+  \item coefficients of polynomial time trends (set via setup.polynomials)
+  \item elements of $\Psi_0^-$ (vectorized using the standard matlab vectorization operator :, as are the elements of all arrays below))
+  \item $a^-$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+  \item $b^-$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+  \item $c^-$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+  \item free elements of $\Psi_0^+$ (i.e. the elements corresponding to the shock that is allowed to have an asymmetric response).
+  \item free elements of $a^+$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+  \item free elements of $b^+$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+  \item free elements of $c^+$ (if there are multiple Gaussian basis functions, all parameters associated with first basis function are order first and so on)
+\end{enumerate}
+
+
+To give concrete examples, the order of parameters in the two FAIR examples
+(without polynomial trends) is as follows:
+
+For the bivariate example with asymmetry in response to the second shock
+(using a FAIR(1)), the parameter vector $\theta $ is ordered as follows%
+\begin{equation}
+\theta =\left( \theta _{\alpha },\text{ }\theta _{\Psi _{0}^{-}},\text{ }%
+\theta _{a^{-}},\text{ }\theta _{b^{-}},\text{ }\theta _{c^{-}},\text{ }%
+\theta _{\Psi _{0}^{+}},\text{ }\theta _{a^{+}},\text{ }\theta _{b^{+}},%
+\text{ }\theta _{c^{+}}\right) ^{\prime }  \label{theta}
+\end{equation}%
+with $\theta _{\alpha }=\left( 
+\begin{array}{c}
+\alpha _{1} \\ 
+\alpha _{2}%
+\end{array}%
+\right) ^{\prime }$ the intercepts$,$ $\theta _{\Psi _{0}^{-}}=\left( 
+\begin{array}{c}
+\Psi _{0,11} \\ 
+\Psi _{0,21} \\ 
+\Psi _{0,12}^{-} \\ 
+\Psi _{0,22}^{-}%
+\end{array}%
+\right) ^{\prime },$ $\theta _{a^{-}}=\left( 
+\begin{array}{c}
+a_{11} \\ 
+a_{21} \\ 
+a_{12}^{-} \\ 
+a_{22}^{-}%
+\end{array}%
+\right) ^{\prime }$ with $a_{ij}$ the loading on the Gaussian basis function
+for the IR of variable $i$ to shock $j,$ $\theta _{b^{-}}=\left( 
+\begin{array}{c}
+b_{11} \\ 
+b_{21} \\ 
+b_{12}^{-} \\ 
+b_{22}^{-}%
+\end{array}%
+\right) ^{\prime },$ $\theta _{c^{-}}=\left( 
+\begin{array}{c}
+c_{11} \\ 
+c_{21} \\ 
+c_{12}^{-} \\ 
+c_{22}^{-}%
+\end{array}%
+\right) ^{\prime }$, $\theta _{\Psi _{0}^{+}}=\left( 
+\begin{array}{c}
+\Psi _{0,12}^{-} \\ 
+\Psi _{0,22}^{-}%
+\end{array}%
+\right) ^{\prime },$ $\theta _{a^{+}}=\left( 
+\begin{array}{c}
+a_{12}^{+} \\ 
+a_{22}^{+}%
+\end{array}%
+\right) ^{\prime },$ $\theta _{b^{+}}=\left( 
+\begin{array}{c}
+b_{12}^{+} \\ 
+b_{22}^{+}%
+\end{array}%
+\right) ^{\prime },$ $\theta _{c^{+}}=\left( 
+\begin{array}{c}
+c_{12}^{+} \\ 
+c_{22}^{+}%
+\end{array}%
+\right) ^{\prime }.$
+
+With a FAIR(2) --two Gaussian basis functions (everything else the same)--, $%
+\theta $ takes the same form as (\ref{theta}) but with $\theta
+_{a^{-}}=\left( a_{1,11},\text{ }a_{1,21},\text{ }a_{1,12}^{-},\text{ }%
+a_{1,22}^{-},\text{ }a_{2,11},\text{ }a_{2,21},\text{ }a_{2,12}^{-},\text{ }%
+a_{2,22}^{-}\right) ^{\prime }$ with $a_{1,ij}$ the loading on the first
+basis function and $a_{2,ij}$ the loading on the second basis function, and
+similarly for the other parameters of the FAIR $\theta _{b^{-}}$, $\theta
+_{c^{-}}$, etc..
+
+Then, for the trivariate example with asymmetry in response to the third
+shock (using a FAIR(1)), the parameter vector $\theta $ takes the same form
+as (\ref{theta}) but with with $\theta _{\alpha }=\left( \alpha _{1},\alpha
+_{2},\alpha _{3}\right) $ the intercepts, $\theta _{\Psi _{0}^{-}}=\left(
+\Psi _{0,11},\Psi _{0,21},\Psi _{0,31},\Psi _{0,12},\Psi _{0,22},\Psi
+_{0,32},\Psi _{0,13}^{-},\Psi _{0,23}^{-},\Psi _{0,33}^{-}\right) ,$
+
+$\theta _{a^{-}}=\left( a_{11},a_{21},a_{31},a_{12},a_{22},a_{32},a_{13}^{-},%
+\text{ }a_{23}^{-},\text{ }a_{33}^{-}\right) $, $\theta _{a^{+}}=\left(
+a_{13}^{+},\text{ }a_{23}^{+},\text{ }a_{33}^{+}\right) $ and similarly for
+the other parameters.
+\bigskip \par
+
+\begin{thebibliography}{99}
+
+\bibitem{} Barnichon R. and C. Matthes. "Functional Approximations of Impulse Responses (FAIR): Insights into the Effects of Monetary Policy," Working
+Paper, 2017
+
+\bibitem{} Baumeister, C. and J. Hamilton, "Sign Restrictions, Structural
+Vector Autoregressions, and Useful Prior Information," Econometrica, 83(5),
+1963-1999, 2015.
+
+\end{document}
