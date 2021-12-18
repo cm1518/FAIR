@@ -8,6 +8,10 @@ clc
 tic
 
 addpath(['lib']);
+if ~exist('results','dir')
+    mkdir('results')
+end
+
 addpath(['results']);
 
 %Initialization/Parametrization of routine
