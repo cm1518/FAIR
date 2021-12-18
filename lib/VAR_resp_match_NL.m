@@ -126,7 +126,7 @@ for j=1:setup.size_obs
             
         elseif j==k
             
-            opt_free=@(params)var_quad_free_2_gaussian( params,setup,store_responses,j,k ) ;
+            opt_free=@(params)var_quad_free_3_gaussian( params,setup,store_responses,j,k ) ;
             %        [xestimate,functionvalue1]=fminsearch(opt_free,ones(4,1),options);
             [xestimate,functionvalue1]=fminsearch(opt_free,[beta_diag(j);beta_gen(j,k); b_gen(j,k);c_gen(j,k);beta_gen2(j,k); b_gen2(j,k);c_gen2(j,k);beta_gen2(j,k); 2*b_gen2(j,k);2*c_gen2(j,k)],options);
             
@@ -144,7 +144,7 @@ for j=1:setup.size_obs
             
         elseif k<j
             
-            opt_below_diag=@(params)var_quad_below_diag_2_gaussian( params,setup,store_responses,j,k ) ;
+            opt_below_diag=@(params)var_quad_below_diag_3_gaussian( params,setup,store_responses,j,k ) ;
             %        [xestimate,functionvalue1]=fminsearch(opt_free,ones(4,1),options);
             [xestimate,functionvalue1]=fminsearch(opt_below_diag,[beta_gen(j,k); b_gen(j,k);c_gen(j,k);beta_gen2(j,k); b_gen2(j,k);c_gen2(j,k);beta_gen2(j,k); 2*b_gen2(j,k);2*c_gen2(j,k)],options);
             
