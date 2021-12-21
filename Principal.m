@@ -7,8 +7,13 @@ clc
 
 tic
 
+mkdir results
+
 addpath(['lib']);
 addpath(['results']);
+
+
+
 
 %Initialization/Parametrization of routine
 setup_NL;
@@ -82,7 +87,6 @@ setup.scaling_adaptive=.03^2/setup.length_param_vector;
 [ draws, acc_rate, log_posteriors, statedraws, add_matrices] = sampling_MH( setup );
 %add_matrices store the estimated shocks
 
-mkdir results
 
 save results/test_NL
 
